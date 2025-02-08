@@ -1,4 +1,39 @@
-<div class="container mx-auto p-6 bg-white rounded-lg shadow-md mt-10">
-    <h1 class="text-2xl font-semibold text-gray-700 mb-4">Welcome, Student!</h1>
-    <p class="text-gray-600">Attempt MCQs and view your scores.</p>
+<div class="container mx-auto p-6 bg-white rounded-lg shadow-md mt-10" ng-controller="StudentController">
+    <h1 class="text-2xl font-semibold text-gray-700 mb-4">Student Dashboard</h1>
+
+    <!-- Exam Section -->
+    <div ng-if="!examCompleted">
+        <h2 class="text-lg font-semibold mb-4">Attempt Exam</h2>
+        <form>
+            <div ng-repeat="mcq in mcqs" class="p-4 border rounded-lg bg-gray-100 mb-4">
+                <p class="font-semibold">{{ mcq.question_text }}</p>
+                <label class="block">
+                    <input type="radio" ng-model="answers[mcq.id]" value="A"> {{ mcq.option_a }}
+                </label>
+                <label class="block">
+                    <input type="radio" ng-model="answers[mcq.id]" value="B"> {{ mcq.option_b }}
+                </label>
+                <label class="block">
+                    <input type="radio" ng-model="answers[mcq.id]" value="C"> {{ mcq.option_c }}
+                </label>
+                <label class="block">
+                    <input type="radio" ng-model="answers[mcq.id]" value="D"> {{ mcq.option_d }}
+                </label>
+            </div>
+            <button ng-click="submitExam()" class="w-full bg-green-500 text-white p-2 rounded">Submit Exam</button>
+        </form>
+    </div>
+
+    <!-- Progress Report Section -->
+    <div ng-if="examCompleted">
+        <h2 class="text-lg font-semibold mt-6">Exam Progress</h2>
+        <ul class="mt-4">
+            <li ng-repeat="progress in progressData" class="border p-2 mb-2 rounded bg-gray-50">
+                Question: {{ progress.question_text }} |
+                Your Answer: {{ progress.selected_option }} |
+                Correct Answer: {{ progress.correct_option }} |
+                Status: {{ progress.is_correct ? '✔ Correct' : '❌ Incorrect' }}
+            </li>
+        </ul>
+    </div>
 </div>
