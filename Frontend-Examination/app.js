@@ -11,7 +11,8 @@ app.config(function ($routeProvider) {
             controller: "TeacherController"  // ✅ Ensure controller is attached
         })
         .when("/student-dashboard", {
-            templateUrl: "views/studentDashboard.html"
+            templateUrl: "views/studentDashboard.html",
+            controller: "StudentController"
         })
         .otherwise({
             redirectTo: "/"

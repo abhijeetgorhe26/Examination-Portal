@@ -1,13 +1,13 @@
 app.controller("TeacherController", function ($scope, $http) {
-    $scope.created_by = 1; // Change dynamically based on logged-in teacher
+    $scope.created_by = JSON.parse(localStorage.getItem("user")).id; // ✅ Fix for dynamic teaher // Change dynamically based on logged-in teacher
     $scope.newQuestion = {};  // ✅ Ensure newQuestion is initialized
     $scope.mcqs = [];
     $scope.submissions = [];
 
     // ✅ Create MCQ function
     $scope.addMCQ = function () {
-        if (!$scope.newQuestion.question_text || !$scope.newQuestion.option_a || 
-            !$scope.newQuestion.option_b || !$scope.newQuestion.option_c || 
+        if (!$scope.newQuestion.question_text || !$scope.newQuestion.option_a ||
+            !$scope.newQuestion.option_b || !$scope.newQuestion.option_c ||
             !$scope.newQuestion.option_d || !$scope.newQuestion.correct_option) {
             alert("All fields are required!");
             return;

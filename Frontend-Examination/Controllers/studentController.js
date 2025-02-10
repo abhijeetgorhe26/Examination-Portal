@@ -1,51 +1,42 @@
 app.controller("StudentController", function ($scope, $http) {
     $scope.mcqs = [];
     $scope.answers = {};
-    $scope.examCompleted = false;
-    $scope.progress = null;
 
-    // Load MCQs for students
+    // ✅ Load MCQs from backend
     $scope.loadExam = function () {
+        console.log("📩 Fetching MCQs for Students...");
+    
         $http.get("http://localhost:3000/mcqs/all")
             .then(response => {
+                console.log("✅ MCQs Loaded:", response.data);
+                if (response.data.length === 0) {
+                    alert("❌ No MCQs available! Please check with your teacher.");
+                }
                 $scope.mcqs = response.data;
             })
             .catch(error => {
-                console.error("Error loading exam:", error);
+                console.error("❌ Error loading exam:", error);
             });
     };
+    
 
-    // Submit Exam Answers
-    $scope.submitExam = function () {
-        let studentId = JSON.parse(localStorage.getItem("user")).id;
-        let submissions = $scope.mcqs.map(mcq => ({
-            student_id: studentId,
-            mcq_id: mcq.id,
-            selected_option: $scope.answers[mcq.id] || null
-        }));
 
-        $http.post("http://localhost:3000/submissions", { submissions })
-            .then(response => {
-                alert("Exam submitted successfully!");
-                $scope.examCompleted = true;
-                $scope.loadProgress();
-            })
-            .catch(error => {
-                console.error("Error submitting exam:", error);
-            });
-    };
-
-    // Load Student Progress
     $scope.loadProgress = function () {
         let studentId = JSON.parse(localStorage.getItem("user")).id;
+        console.log("📩 Fetching Progress Report for Student ID:", studentId);
+
         $http.get(`http://localhost:3000/progress/${studentId}`)
             .then(response => {
-                $scope.progress = response.data;
+                console.log("✅ Progress Data:", response.data);
+                $scope.progressData = response.data;
             })
             .catch(error => {
-                console.error("Error fetching progress:", error);
+                console.error("❌ Error fetching progress:", error);
             });
     };
 
-    $scope.loadExam();  // Load exam on page load
+
+    // ✅ Load exam on page load
+    $scope.loadExam();
+    $scope.loadProgress();
 });
