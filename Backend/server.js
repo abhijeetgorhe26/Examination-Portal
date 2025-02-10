@@ -15,7 +15,16 @@ const db = mysql.createConnection({
     password: 'Abhijeet@123',
     database: 'examination_db'
 });
- 
+
+db.query("SELECT COUNT(*) AS total FROM Questions", (err, result) => {
+    if (err) {
+        console.error("❌ Database Connection Error:", err);
+        return;
+    }
+    console.log("✅ Total MCQs in DB:", result[0].total);
+});
+
+
 db.connect(err => {
     if (err) {
         console.error('❌ Database connection failed:', err);
@@ -72,24 +81,24 @@ app.get('/students/:id', (req, res) => {
 // CREATE a new student
 app.post('/students', (req, res) => {
     const { ID, Name, Dept_Name, Total_Credits } = req.body;
-    db.query("INSERT INTO Student (ID, Name, Dept_Name, Total_Credits) VALUES (?, ?, ?, ?)", 
+    db.query("INSERT INTO Student (ID, Name, Dept_Name, Total_Credits) VALUES (?, ?, ?, ?)",
         [ID, Name, Dept_Name, Total_Credits], (err, result) => {
-        if (err) return res.status(500).json({ error: err.message });
+            if (err) return res.status(500).json({ error: err.message });
 
-        res.status(201).json({ message: 'Student added successfully', studentID: result.insertId });
-    });
+            res.status(201).json({ message: 'Student added successfully', studentID: result.insertId });
+        });
 });
 
 // UPDATE a student
 app.put('/students/:id', (req, res) => {
     const { Name, Dept_Name, Total_Credits } = req.body;
-    db.query("UPDATE Student SET Name = ?, Dept_Name = ?, Total_Credits = ? WHERE ID = ?", 
+    db.query("UPDATE Student SET Name = ?, Dept_Name = ?, Total_Credits = ? WHERE ID = ?",
         [Name, Dept_Name, Total_Credits, req.params.id], (err, result) => {
-        if (err) return res.status(500).json({ error: err.message });
-        if (result.affectedRows === 0) return res.status(404).json({ message: 'Student not found' });
+            if (err) return res.status(500).json({ error: err.message });
+            if (result.affectedRows === 0) return res.status(404).json({ message: 'Student not found' });
 
-        res.json({ message: 'Student updated successfully' });
-    });
+            res.json({ message: 'Student updated successfully' });
+        });
 });
 
 // DELETE a student
@@ -211,23 +220,71 @@ app.get('/mcqs/:teacher_id', (req, res) => {
     });
 });
 
-
-// GET All Student Submissions for a teacher's Questions
-
-app.get('/submissions/:id', (req, res) => {
-    const query = `
-    SELECT s.id, s.student_id, s.mcq_id, s.selected_option, s.is_correct, s.submitted_at, u.username 
-    FROM student_submissions s
-    JOIN questions q ON s.mcq_id = q.id  -- ✅ Corrected table name
-    JOIN users u ON s.student_id = u.id
-    WHERE q.created_by = 1`;
-    
-    db.query(query, [req.params.teacher_id], (err, results) => {
+// ✅ Fetch All MCQs for Students
+app.get('/mcqs/all', (req, res) => {
+    db.query("SELECT * FROM Questions", (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
 
+        console.log("📩 Sending MCQs:", results); // ✅ Debugging
         res.json(results);
     });
 });
+
+
+
+// GET All Student Submissions for a teacher's Questions
+
+app.post("/submissions", (req, res) => {
+    const submissions = req.body.submissions;
+
+    if (!submissions || !submissions.length) {
+        return res.status(400).json({ error: "No submissions provided" });
+    }
+
+    let query = `
+        INSERT INTO student_submissions (student_id, mcq_id, selected_option, is_correct) 
+        VALUES ? 
+        ON DUPLICATE KEY UPDATE 
+        selected_option = VALUES(selected_option), 
+        is_correct = (selected_option = (SELECT correct_option FROM Questions WHERE id = mcq_id))
+    `;
+
+    let values = submissions.map(s => [
+        s.student_id, 
+        s.mcq_id, 
+        s.selected_option,
+        `(SELECT correct_option FROM Questions WHERE id = ${s.mcq_id}) = '${s.selected_option}'` // ✅ Fixing answer validation
+    ]);
+
+    db.query(query, [values], (err, result) => {
+        if (err) return res.status(500).json({ error: err.message });
+
+        res.json({ message: "✅ Exam submitted successfully!" });
+    });
+});
+
+
+app.get('/progress/:student_id', (req, res) => {
+    const studentId = req.params.student_id;
+
+    db.query(`
+        SELECT q.question_text, s.selected_option, q.correct_option,
+               (s.selected_option = q.correct_option) AS is_correct
+        FROM student_submissions s
+        JOIN Questions q ON s.mcq_id = q.id
+        WHERE s.student_id = ?;
+    `, [studentId], (err, results) => {
+        if (err) {
+            console.error("❌ Error fetching progress:", err);
+            return res.status(500).json({ error: err.message });
+        }
+        console.log("📊 Student Progress Data:", results);
+        res.json(results);
+    });
+});
+
+
+
 
 
 app.post("/submissions", (req, res) => {
@@ -244,8 +301,8 @@ app.post("/submissions", (req, res) => {
                                 is_correct = VALUES(is_correct)`;
 
     let values = submissions.map(s => [
-        s.student_id, 
-        s.mcq_id, 
+        s.student_id,
+        s.mcq_id,
         s.selected_option,
         `(SELECT correct_option FROM Questions WHERE id = ${s.mcq_id}) = '${s.selected_option}'`
     ]);
@@ -255,7 +312,10 @@ app.post("/submissions", (req, res) => {
 
         res.json({ message: "Exam submitted successfully!" });
     });
-});  
+});
+
+
+
 
 
 
